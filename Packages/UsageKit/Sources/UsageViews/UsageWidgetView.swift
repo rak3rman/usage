@@ -54,16 +54,24 @@ public struct UsageWidgetView: View {
                 switch busiest.reading {
                 case .limits(let limits):
                     if let peak = limits.peak {
+                        let reading = LimitReading(peak, peak == limits.session ? .session : .weekly, now: now)
                         Text(Format.percent(peak.percent))
                             .font(.system(size: 34, weight: .light).monospacedDigit())
-                            .foregroundStyle(Palette.figure(peak.percent).color)
-                        caption(limits, peak: peak, staleSince: staleSince(snapshot))
-                            .font(.system(size: 10.5))
-                            .padding(.bottom, 12)
+                            .foregroundStyle(reading.tone == .critical ? Palette.Pace.critical : Palette.content.color)
+                        Group {
+                            if let staleSince = staleSince(snapshot) {
+                                Text("\(Format.duration(now.timeIntervalSince(staleSince))) old")
+                                    .font(.system(size: 10.5))
+                                    .foregroundStyle(Palette.warning.color)
+                            } else {
+                                LimitFigure(reading: reading)
+                            }
+                        }
+                        .padding(.bottom, 12)
                     }
                     VStack(spacing: 5) {
-                        if let session = limits.session { taggedBar(session, "5h") }
-                        if let weekly = limits.weekly { taggedBar(weekly, "7d") }
+                        if let session = limits.session { DotBar(percent: session.percent) }
+                        if let weekly = limits.weekly { DotBar(percent: weekly.percent) }
                     }
                 case .failed(let failure):
                     Text(failure.sentence)
@@ -71,27 +79,6 @@ public struct UsageWidgetView: View {
                         .foregroundStyle(Palette.error.color)
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private func caption(_ limits: Limits, peak: LimitWindow, staleSince: Date?) -> some View {
-        if let staleSince {
-            Text("\(Format.duration(now.timeIntervalSince(staleSince))) old")
-                .foregroundStyle(Palette.warning.color)
-        } else {
-            let window = peak == limits.session ? "5h" : "7d"
-            let reset = peak.resetsAt.map { " · \(Format.duration($0.timeIntervalSince(now)))" } ?? ""
-            Text(window + reset).foregroundStyle(Palette.neutral.color)
-        }
-    }
-
-    private func taggedBar(_ window: LimitWindow, _ name: String) -> some View {
-        HStack(spacing: 6) {
-            DotBar(percent: window.percent)
-            Text(name)
-                .font(.system(size: 9))
-                .foregroundStyle(Palette.neutral.color)
         }
     }
 

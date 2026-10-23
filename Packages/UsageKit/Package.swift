@@ -12,5 +12,6 @@ let package = Package(
         .target(name: "UsageKit"),
         .target(name: "UsageViews", dependencies: ["UsageKit"]),
         .testTarget(name: "UsageKitTests", dependencies: ["UsageKit"]),
+        .testTarget(name: "UsageViewsTests", dependencies: ["UsageViews"]),
     ]
 )

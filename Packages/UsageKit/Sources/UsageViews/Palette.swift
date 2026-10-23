@@ -19,9 +19,11 @@ public enum Palette {
         }
     }
 
-    static func figure(_ percent: Double) -> Swatch {
-        let tint = severity(percent)
-        return tint == secondary ? content : tint
+    enum Pace {
+        static let quiet = Color(.displayP3, red: 0.4686, green: 0.4686, blue: 0.4804)
+        static let under = Color(.displayP3, red: 0.3098, green: 0.6627, blue: 0.5725)
+        static let over = Color(.displayP3, red: 0.8706, green: 0.7333, blue: 0.4196)
+        static let critical = Color(.displayP3, red: 0.8745, green: 0.349, blue: 0.3255)
     }
 }
 

@@ -6,12 +6,12 @@ public struct AccountRow: View {
     private let now: Date
     private let staleSince: Date?
 
-    private static let percentColumnWidth: CGFloat = 32
+    private static let figureColumnWidth: CGFloat = 64
 
     /**
      * Create a row for one account.
      *
-     * - Parameter staleSince: When set, the reading's age replaces the reset countdown.
+     * - Parameter staleSince: When set, the reading's age shows at the end of the label line.
      */
     public init(_ usage: AccountUsage, now: Date, staleSince: Date? = nil) {
         self.usage = usage
@@ -25,54 +25,41 @@ public struct AccountRow: View {
                 ProviderMark(provider: usage.id.provider)
                     .fill(Palette.content.color, style: FillStyle(eoFill: true))
                     .frame(width: 11, height: 11)
-                    .frame(width: Self.percentColumnWidth, alignment: .leading)
+                    .frame(width: Self.figureColumnWidth, alignment: .leading)
                 Text("\(usage.name) · \(usage.id.provider.title) \(usage.plan)")
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .foregroundStyle(Palette.neutral.color)
                 Spacer(minLength: 4)
-                trailing
+                if let staleSince {
+                    Text("\(Format.duration(now.timeIntervalSince(staleSince))) old")
+                        .foregroundStyle(Palette.warning.color)
+                }
             }
             .font(.system(size: 10.5))
 
             switch usage.reading {
             case .limits(let limits):
-                if let session = limits.session { bar(session, "5h") }
-                if let weekly = limits.weekly { bar(weekly, "7d") }
+                if let session = limits.session { bar(LimitReading(session, .session, now: now)) }
+                if let weekly = limits.weekly { bar(LimitReading(weekly, .weekly, now: now)) }
             case .failed(let failure):
                 HStack(spacing: 8) {
                     Text("—")
-                        .frame(width: Self.percentColumnWidth, alignment: .leading)
+                        .frame(width: Self.figureColumnWidth, alignment: .leading)
                         .foregroundStyle(Palette.neutral.color)
                     Text(failure.sentence)
                         .foregroundStyle(failure == .signInRequired ? Palette.error.color : Palette.neutral.color)
                 }
-                .font(.system(size: 11))
+                .font(.system(size: 10.5))
             }
         }
     }
 
-    @ViewBuilder
-    private var trailing: some View {
-        if let staleSince {
-            Text("\(Format.duration(now.timeIntervalSince(staleSince))) old")
-                .foregroundStyle(Palette.warning.color)
-        } else if let reset = usage.limits?.peak?.resetsAt {
-            Text(Format.duration(reset.timeIntervalSince(now)))
-                .foregroundStyle(Palette.neutral.color)
-        }
-    }
-
-    private func bar(_ window: LimitWindow, _ name: String) -> some View {
+    private func bar(_ reading: LimitReading) -> some View {
         HStack(spacing: 8) {
-            Text(Format.percent(window.percent))
-                .font(.system(size: 11).monospacedDigit())
-                .foregroundStyle(Palette.figure(window.percent).color)
-                .frame(width: Self.percentColumnWidth, alignment: .leading)
-            DotBar(percent: window.percent)
-            Text(name)
-                .font(.system(size: 9))
-                .foregroundStyle(Palette.neutral.color)
+            LimitFigure(reading: reading)
+                .frame(width: Self.figureColumnWidth, alignment: .leading)
+            DotBar(percent: Double(reading.percent))
         }
     }
 }
