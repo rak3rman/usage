@@ -9,13 +9,9 @@ struct AccountsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("Accounts")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Palette.content.color)
-                Spacer()
-                StatusDots(model.signingIn != nil ? .loading : model.accountProblem != nil ? .error : .idle)
-            }
+            Text("Accounts")
+                .font(.system(size: 18))
+                .foregroundStyle(Palette.content.color)
 
             if let keychainProblem = model.keychainProblem {
                 problem(keychainProblem)

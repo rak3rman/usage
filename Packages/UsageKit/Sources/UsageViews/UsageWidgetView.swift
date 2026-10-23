@@ -113,7 +113,7 @@ public struct UsageWidgetView: View {
 
     private var empty: some View {
         VStack(spacing: 8) {
-            StatusDots(.idle)
+            StatusDots()
             Text("No accounts")
                 .font(.system(size: 12))
                 .foregroundStyle(Palette.content.color)

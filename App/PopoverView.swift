@@ -8,13 +8,9 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Text("Usage")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Palette.content.color)
-                Spacer()
-                StatusDots(dotsState)
-            }
+            Text("Usage")
+                .font(.system(size: 18))
+                .foregroundStyle(Palette.content.color)
 
             if let keychainProblem = model.keychainProblem {
                 Text(keychainProblem)
@@ -47,13 +43,6 @@ struct PopoverView: View {
         .background(Palette.base100.color)
         .environment(\.colorScheme, .dark)
         .task { await model.refresh(ifOlderThan: 60) }
-    }
-
-    private var dotsState: StatusDots.State {
-        if model.isRefreshing { return .loading }
-        let failed = model.keychainProblem != nil
-            || model.snapshot?.accounts.contains { $0.limits == nil } == true
-        return failed ? .error : .idle
     }
 
     private func openAccounts() {

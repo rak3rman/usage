@@ -71,18 +71,13 @@ struct DotBar: View {
     }
 }
 
-/** The 15 × 3 status grid from the radical-ui sign-in header. */
-public struct StatusDots: View {
-    public enum State: Sendable { case idle, loading, error }
-
-    private let state: State
+/** The idle 15 × 3 status grid from the radical-ui sign-in header. */
+struct StatusDots: View {
     @Environment(\.widgetRenderingMode) private var renderingMode
     private static let columns = 15
     private static let rows = 3
 
-    public init(_ state: State) { self.state = state }
-
-    public var body: some View {
+    var body: some View {
         Canvas { context, _ in
             DotGrid.draw(context, columns: Self.columns, rows: Self.rows) { column, row in
                 color(column: column, row: row)
@@ -96,12 +91,10 @@ public struct StatusDots: View {
     private func color(column: Int, row: Int) -> Color {
         let rising = 0.2 + 0.6 * Double(column) / Double(Self.columns - 1)
         let falling = 0.2 + 0.6 * (1 - Double(column) / Double(Self.columns - 1))
-        let (swatch, amount): (Swatch, Double) = switch (state, row) {
-        case (.error, _): (Palette.error, rising)
-        case (.loading, _): (Palette.secondary, rising)
-        case (.idle, 0): (Palette.secondary, falling)
-        case (.idle, Self.rows - 1): (Palette.secondary, rising)
-        case (.idle, _): (Palette.neutral, 0.48)
+        let (swatch, amount): (Swatch, Double) = switch row {
+        case 0: (Palette.secondary, falling)
+        case Self.rows - 1: (Palette.secondary, rising)
+        default: (Palette.neutral, 0.48)
         }
         guard renderingMode == .fullColor else { return .white.opacity(amount) }
         return swatch.mixed(over: Palette.base300, amount: amount).color
