@@ -1,23 +1,10 @@
-// Signing settings.
+// Ad-hoc by default. The widget can read the app group only from a team-signed build;
+// put your identity in Signing.local.xcconfig:
 //
-// The defaults assume the project is being built for the machine it is on: an
-// ad-hoc signature works without a developer account. But macOS ties access to
-// another application's keychain item to the signature, and an ad-hoc one
-// changes on every build — so "Always Allow" is not remembered with it and the
-// password is asked for again.
-//
-// To avoid that, create Signing.local.xcconfig beside this file (it is in
-// .gitignore) with your own values:
-//
-//     CODE_SIGN_IDENTITY = Apple Development: Your Name (XXXXXXXXXX)
-//     DEVELOPMENT_TEAM = YYYYYYYYYY
-//
-// The team ID is the OU field of the certificate, not the number in brackets in
-// its name:
-//     security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject
+//     CODE_SIGN_IDENTITY = Apple Development
+//     DEVELOPMENT_TEAM = YOURTEAMID
+
+CODE_SIGN_IDENTITY = -
+CODE_SIGN_STYLE = Manual
 
 #include? "Signing.local.xcconfig"
-
-CODE_SIGN_IDENTITY = $(inherited)
-DEVELOPMENT_TEAM = $(inherited)
-CODE_SIGN_STYLE = Manual

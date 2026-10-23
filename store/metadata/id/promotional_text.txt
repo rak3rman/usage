@@ -1,1 +1,0 @@
-Batas sesi dan mingguan untuk setiap akun Claude Code dan Codex Anda, di menu bar, dengan peringatan jauh sebelum habis.
