@@ -6,6 +6,7 @@ struct AccountsView: View {
     static let windowID = "accounts"
 
     let model: UsageModel
+    @FocusState private var addClaudeFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -31,6 +32,7 @@ struct AccountsView: View {
             } else {
                 HStack(spacing: 8) {
                     Button("Add Claude Code") { model.signIn(.claude) }
+                        .focused($addClaudeFocused)
                     Button("Add Codex") { model.signIn(.codex) }
                 }
                 .buttonStyle(PillButtonStyle())
@@ -46,6 +48,7 @@ struct AccountsView: View {
                 .foregroundStyle(Palette.neutral.color)
         }
         .padding(24)
+        .defaultFocus($addClaudeFocused, true)
         .frame(width: 420)
         .background(Palette.base100.color)
         .environment(\.colorScheme, .dark)
