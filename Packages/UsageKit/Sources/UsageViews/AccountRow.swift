@@ -59,7 +59,7 @@ public struct AccountRow: View {
         HStack(spacing: 8) {
             LimitFigure(reading: reading)
                 .frame(width: Self.figureColumnWidth, alignment: .leading)
-            DotBar(percent: Double(reading.percent))
+            DotBar(percent: reading.percent, evenBurn: reading.evenBurn)
         }
     }
 }

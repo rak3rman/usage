@@ -70,8 +70,8 @@ public struct UsageWidgetView: View {
                         .padding(.bottom, 12)
                     }
                     VStack(spacing: 5) {
-                        if let session = limits.session { DotBar(percent: session.percent) }
-                        if let weekly = limits.weekly { DotBar(percent: weekly.percent) }
+                        if let session = limits.session { bar(session, .session) }
+                        if let weekly = limits.weekly { bar(weekly, .weekly) }
                     }
                 case .failed(let failure):
                     Text(failure.sentence)
@@ -80,6 +80,11 @@ public struct UsageWidgetView: View {
                 }
             }
         }
+    }
+
+    private func bar(_ window: LimitWindow, _ kind: WindowKind) -> some View {
+        let reading = LimitReading(window, kind, now: now)
+        return DotBar(percent: reading.percent, evenBurn: reading.evenBurn)
     }
 
     private func list(_ snapshot: UsageSnapshot, capacity: Int, header: Bool) -> some View {
