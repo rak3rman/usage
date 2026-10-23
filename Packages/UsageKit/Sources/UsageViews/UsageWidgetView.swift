@@ -58,6 +58,7 @@ public struct UsageWidgetView: View {
                         Text(Format.percent(peak.percent))
                             .font(.system(size: 34, weight: .light).monospacedDigit())
                             .foregroundStyle(reading.tone == .critical ? Palette.Pace.critical : Palette.content.color)
+                            .contentTransition(.numericText(value: peak.percent))
                         Group {
                             if let staleSince = staleSince(snapshot) {
                                 Text("\(Format.duration(now.timeIntervalSince(staleSince))) old")

@@ -96,6 +96,7 @@ struct LimitFigure: View {
             .font(.system(size: 10.5).monospacedDigit())
             .lineLimit(1)
             .minimumScaleFactor(0.85)
+            .contentTransition(.numericText(value: Double(reading.percent)))
     }
 
     private var paceColor: Color {
