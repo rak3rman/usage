@@ -111,7 +111,8 @@ struct CodexIdentity: Equatable {
  * Parser for `rate_limit.primary_window` and `secondary_window`.
  *
  * Each window is classified by `limit_window_seconds` when present: under a day is the
- * session window.
+ * session window. An unused window reports its reset a full window away on every
+ * request; it is read as not started, with no reset.
  */
 enum CodexUsage {
     private struct Body: Decodable {
@@ -142,7 +143,8 @@ enum CodexUsage {
             guard window.usedPercent.isFinite, (0...100).contains(window.usedPercent) else {
                 throw UsageError(.unexpectedResponse, "used_percent out of range")
             }
-            let resetsAt = window.resetAt.map { Date(timeIntervalSince1970: $0) }
+            let started = window.limitWindowSeconds.map { (window.resetAfterSeconds ?? 0) < $0 } ?? true
+            let resetsAt = !started ? nil : window.resetAt.map { Date(timeIntervalSince1970: $0) }
                 ?? window.resetAfterSeconds.map { now.addingTimeInterval($0) }
             let limit = LimitWindow(percent: window.usedPercent, resetsAt: resetsAt.map(wholeMinute))
             let isSession = window.limitWindowSeconds.map { $0 < 86_400 } ?? isSessionByPosition

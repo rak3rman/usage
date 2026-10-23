@@ -49,6 +49,14 @@ import Testing
             percent: 25, resetsAt: Date(timeIntervalSince1970: 1_800_003_600)))
     }
 
+    @Test func readsAnUnusedWindowAsNotStarted() throws {
+        let report = try CodexUsage.parse(json("""
+            {"rate_limit":{"primary_window":{"used_percent":0,"limit_window_seconds":18000,
+              "reset_after_seconds":18000,"reset_at":1800018000}}}
+            """))
+        #expect(report.limits.session == LimitWindow(percent: 0, resetsAt: nil))
+    }
+
     @Test(arguments: [
         #"{"rate_limit":{}}"#,
         #"{"rate_limit":{"primary_window":{"used_percent":101}}}"#,
