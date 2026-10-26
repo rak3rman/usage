@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import WidgetKit
 
@@ -8,14 +9,19 @@ enum DotGrid {
 
     static func height(rows: Int) -> CGFloat { CGFloat(rows) * pitch - gap }
 
+    static func dot(column: Int, row: Int, columnPitch: CGFloat) -> CGRect {
+        CGRect(x: CGFloat(column) * columnPitch, y: CGFloat(row) * pitch, width: diameter, height: diameter)
+    }
+
+    /** Spreads the columns across `width`; the last dot ends flush with it. */
     static func draw(
-        _ context: GraphicsContext, columns: Int, rows: Int, color: (_ column: Int, _ row: Int) -> Color
+        _ context: GraphicsContext, columns: Int, rows: Int, width: CGFloat,
+        color: (_ column: Int, _ row: Int) -> Color
     ) {
+        let columnPitch = (width - diameter) / CGFloat(max(1, columns - 1))
         for row in 0..<rows {
             for column in 0..<columns {
-                let dot = CGRect(
-                    x: CGFloat(column) * pitch, y: CGFloat(row) * pitch,
-                    width: diameter, height: diameter)
+                let dot = dot(column: column, row: row, columnPitch: columnPitch)
                 context.fill(Path(ellipseIn: dot), with: .color(color(column, row)))
             }
         }
@@ -26,7 +32,6 @@ enum DotGrid {
 enum Dot: Equatable {
     case used, spare, unearned
 
-    /** A window with no reset has not started, so none of it is earned yet. */
     static func bar(columns: Int, percent: Int, evenBurn: Int?) -> [Dot] {
         func count(_ percent: Int) -> Int { Int((Double(percent) / 100 * Double(columns)).rounded()) }
         let used = percent > 0 ? max(1, count(percent)) : 0
@@ -35,6 +40,26 @@ enum Dot: Equatable {
             if column < used { return .used }
             return column < earned ? .spare : .unearned
         }
+    }
+}
+
+/** The 3 × 3 menu bar meter: a dot lit per ninth of `percent`, in reading order. */
+public enum MenuBarMeter {
+    private static let side = 3
+
+    public static func image(percent: Double?) -> NSImage {
+        let dots = Dot.bar(columns: side * side, percent: Int((percent ?? 0).rounded()), evenBurn: nil)
+        let length = DotGrid.height(rows: side)
+        let image = NSImage(size: NSSize(width: length, height: length), flipped: true) { _ in
+            for (index, dot) in dots.enumerated() {
+                NSColor.black.withAlphaComponent(dot == .used ? 1 : 0.35).setFill()
+                NSBezierPath(ovalIn: DotGrid.dot(column: index % side, row: index / side, columnPitch: DotGrid.pitch))
+                    .fill()
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 }
 
@@ -52,7 +77,7 @@ struct DotBar: View {
             let used = dots.filter { $0 == .used }.count
             let tint = Palette.severity(Double(percent))
             let fullColor = renderingMode == .fullColor
-            DotGrid.draw(context, columns: dots.count, rows: Self.rows) { column, _ in
+            DotGrid.draw(context, columns: dots.count, rows: Self.rows, width: size.width) { column, _ in
                 switch dots[column] {
                 case .used:
                     let intensity = 0.35 + 0.65 * Double(column + 1) / Double(used)
@@ -71,15 +96,14 @@ struct DotBar: View {
     }
 }
 
-/** The idle 15 × 3 status grid from the radical-ui sign-in header. */
 struct StatusDots: View {
     @Environment(\.widgetRenderingMode) private var renderingMode
     private static let columns = 15
     private static let rows = 3
 
     var body: some View {
-        Canvas { context, _ in
-            DotGrid.draw(context, columns: Self.columns, rows: Self.rows) { column, row in
+        Canvas { context, size in
+            DotGrid.draw(context, columns: Self.columns, rows: Self.rows, width: size.width) { column, row in
                 color(column: column, row: row)
             }
         }

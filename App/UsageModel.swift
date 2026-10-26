@@ -8,7 +8,7 @@ import WidgetKit
 @MainActor @Observable
 final class UsageModel {
     private(set) var accounts: [StoredAccount] = []
-    private(set) var snapshot: UsageSnapshot?
+    private(set) var snapshot = SnapshotStore.shared.read()
     private(set) var isRefreshing = false
     private(set) var keychainProblem: String?
     private(set) var signingIn: Provider?
@@ -19,7 +19,7 @@ final class UsageModel {
         storage: Keychain(service: "io.radison.usage.accounts"), services: [Claude(), Codex()])
     private var signInTask: Task<Void, Never>?
 
-    private static let pollInterval: Duration = .seconds(300)
+    private static let pollInterval: TimeInterval = 300
     private static let log = Logger(subsystem: "io.radison.usage", category: "model")
 
     var peakPercent: Double? {
@@ -27,9 +27,11 @@ final class UsageModel {
     }
 
     func poll() async {
+        var due = Date()
         while !Task.isCancelled {
             await refresh()
-            try? await Task.sleep(for: Self.pollInterval)
+            due = max(due, Date()).floored(toEvery: Self.pollInterval) + Self.pollInterval
+            try? await Task.sleep(for: .seconds(due.timeIntervalSinceNow))
         }
     }
 
@@ -47,7 +49,7 @@ final class UsageModel {
             keychainProblem = nil
             let readings = try await store.readUsage()
             Self.log.info("read \(readings.count, privacy: .public) accounts")
-            publish(UsageSnapshot(accounts: readings, capturedAt: Date()))
+            publish(UsageSnapshot(accounts: readings, capturedAt: Date(), previous: snapshot))
         } catch {
             Self.log.error("accounts not read: \(String(describing: error), privacy: .public)")
             keychainProblem = String(describing: error)

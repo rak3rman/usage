@@ -31,6 +31,7 @@ public struct AccountRow: View {
                     .truncationMode(.middle)
                     .foregroundStyle(Palette.neutral.color)
                 Spacer(minLength: 4)
+                RateLimitCode(reading: usage.reading)
                 if let staleSince {
                     Text("\(Format.duration(now.timeIntervalSince(staleSince))) old")
                         .foregroundStyle(Palette.warning.color)
@@ -39,7 +40,7 @@ public struct AccountRow: View {
             .font(.system(size: 10.5))
 
             switch usage.reading {
-            case .limits(let limits):
+            case .limits(let limits), .rateLimited(let limits):
                 if let session = limits.session { bar(LimitReading(session, .session, now: now)) }
                 if let weekly = limits.weekly { bar(LimitReading(weekly, .weekly, now: now)) }
             case .failed(let failure):
@@ -60,6 +61,16 @@ public struct AccountRow: View {
             LimitFigure(reading: reading)
                 .frame(width: Self.figureColumnWidth, alignment: .leading)
             DotBar(percent: reading.percent, evenBurn: reading.evenBurn)
+        }
+    }
+}
+
+struct RateLimitCode: View {
+    let reading: Reading
+
+    var body: some View {
+        if case .rateLimited = reading {
+            Text("429").foregroundStyle(Palette.Pace.over)
         }
     }
 }

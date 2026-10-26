@@ -9,11 +9,8 @@ struct UsageApp: App {
         MenuBarExtra {
             PopoverView(model: delegate.model)
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "circle.grid.3x3.fill")
-                if let peak = delegate.model.peakPercent { Text(Format.percent(peak)) }
-            }
-            .accessibilityLabel("Usage")
+            Image(nsImage: MenuBarMeter.image(percent: delegate.model.peakPercent))
+                .accessibilityLabel("Usage")
         }
         .menuBarExtraStyle(.window)
 

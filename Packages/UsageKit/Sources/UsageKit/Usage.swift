@@ -70,6 +70,7 @@ public enum Failure: String, Codable, Sendable, Hashable {
 public enum Reading: Codable, Sendable, Hashable {
     case limits(Limits)
     case failed(Failure)
+    case rateLimited(Limits)
 }
 
 public struct AccountUsage: Codable, Sendable, Hashable, Identifiable {
@@ -86,8 +87,10 @@ public struct AccountUsage: Codable, Sendable, Hashable, Identifiable {
     }
 
     public var limits: Limits? {
-        guard case .limits(let limits) = reading else { return nil }
-        return limits
+        switch reading {
+        case .limits(let limits), .rateLimited(let limits): limits
+        case .failed: nil
+        }
     }
 }
 
@@ -95,9 +98,21 @@ public struct UsageSnapshot: Codable, Sendable, Hashable {
     public let accounts: [AccountUsage]
     public let capturedAt: Date
 
-    public init(accounts: [AccountUsage], capturedAt: Date) {
+    init(accounts: [AccountUsage], capturedAt: Date) {
         self.accounts = accounts
         self.capturedAt = capturedAt
+    }
+
+    public init(accounts: [AccountUsage], capturedAt: Date, previous: UsageSnapshot?) {
+        self.init(
+            accounts: accounts.map { usage in
+                guard usage.reading == .failed(.rateLimited),
+                      let held = previous?.accounts.first(where: { $0.id == usage.id }),
+                      let limits = held.limits
+                else { return usage }
+                return AccountUsage(id: usage.id, name: usage.name, plan: held.plan, reading: .rateLimited(limits))
+            },
+            capturedAt: capturedAt)
     }
 }
 

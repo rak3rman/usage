@@ -21,9 +21,10 @@ struct UsageTimeline: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UsageEntry>) -> Void) {
         let snapshot = SnapshotStore.shared.read()
-        let start = Date()
-        let entries = (0..<Self.countdownMinutes).map {
-            UsageEntry(date: start.addingTimeInterval(Double($0) * 60), snapshot: snapshot)
+        let now = Date()
+        let minute = now.floored(toEvery: 60)
+        let entries = [UsageEntry(date: now, snapshot: snapshot)] + (1..<Self.countdownMinutes).map {
+            UsageEntry(date: minute.addingTimeInterval(Double($0) * 60), snapshot: snapshot)
         }
         completion(Timeline(entries: entries, policy: .atEnd))
     }

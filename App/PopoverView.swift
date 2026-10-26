@@ -17,7 +17,7 @@ struct PopoverView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Palette.error.color)
             } else if let snapshot = model.snapshot, !snapshot.accounts.isEmpty {
-                TimelineView(.periodic(from: .now, by: 60)) { context in
+                TimelineView(.everyMinute) { context in
                     VStack(alignment: .leading, spacing: 16) {
                         ForEach(snapshot.accounts) { AccountRow($0, now: context.date) }
                     }

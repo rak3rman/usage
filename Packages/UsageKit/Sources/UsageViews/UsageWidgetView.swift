@@ -46,13 +46,15 @@ public struct UsageWidgetView: View {
                         .fill(Palette.content.color, style: FillStyle(eoFill: true))
                         .frame(width: 11, height: 11)
                     Text(busiest.name)
-                        .font(.system(size: 10.5))
                         .lineLimit(1)
                         .foregroundStyle(Palette.neutral.color)
+                    Spacer(minLength: 4)
+                    RateLimitCode(reading: busiest.reading)
                 }
+                .font(.system(size: 10.5))
                 Spacer(minLength: 0)
                 switch busiest.reading {
-                case .limits(let limits):
+                case .limits(let limits), .rateLimited(let limits):
                     if let peak = limits.peak {
                         let reading = LimitReading(peak, peak == limits.session ? .session : .weekly, now: now)
                         Text(Format.percent(peak.percent))
