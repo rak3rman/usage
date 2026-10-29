@@ -16,7 +16,7 @@ final class UsageModel {
     private(set) var opensAtLogin = SMAppService.mainApp.status == .enabled
 
     private let store = AccountStore(
-        storage: Keychain(service: "io.radison.usage.accounts"), services: [Claude(), Codex()])
+        storage: Keychain(service: "io.radison.usage.accounts"), services: [Claude(), Codex(), Cursor()])
     private var signInTask: Task<Void, Never>?
 
     private static let pollInterval: TimeInterval = 300
@@ -62,7 +62,7 @@ final class UsageModel {
         accountProblem = nil
         signInTask = Task {
             do {
-                let account = try await SignIn.run(service) { url in
+                let account = try await service.signIn { url in
                     await MainActor.run { NSWorkspace.shared.open(url) }
                 }
                 try await store.save(account)

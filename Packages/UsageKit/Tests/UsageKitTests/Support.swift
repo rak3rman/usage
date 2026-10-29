@@ -31,7 +31,6 @@ final class MemoryStorage: SecretStorage, @unchecked Sendable {
 
 actor FakeService: UsageService {
     nonisolated let provider: Provider
-    nonisolated let redirect = LoopbackRedirect(port: nil, path: "/callback")
     private(set) var refreshes: [String] = []
     private let refreshResult: @Sendable (String) throws -> Tokens
     private let usageResult: @Sendable (String) throws -> UsageReport
@@ -48,13 +47,7 @@ actor FakeService: UsageService {
         usageResult = usage
     }
 
-    nonisolated func authorizationURL(redirectURI: String, pkce: PKCE, state: String) -> URL {
-        URL(string: "https://example.com/authorize")!
-    }
-
-    nonisolated func signIn(
-        code: String, pkce: PKCE, redirectURI: String, state: String
-    ) async throws -> StoredAccount {
+    nonisolated func signIn(open: @Sendable (URL) async -> Bool) async throws -> StoredAccount {
         throw UsageError(.unexpectedResponse, "not used")
     }
 
@@ -72,9 +65,7 @@ actor FakeService: UsageService {
 extension UsageReport {
     static let sample = UsageReport(
         plan: "Max 20x",
-        limits: Limits(
-            session: LimitWindow(percent: 42, resetsAt: nil),
-            weekly: LimitWindow(percent: 18, resetsAt: nil)))
+        limits: Limits([.session(percent: 42, resetsAt: nil), .weekly(percent: 18, resetsAt: nil)]))
 }
 
 extension StoredAccount {

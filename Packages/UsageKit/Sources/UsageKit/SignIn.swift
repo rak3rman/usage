@@ -8,8 +8,8 @@ public enum SignInError: Error, Sendable, Equatable {
     case timedOut
 }
 
-public enum SignIn {
-    private static let timeout: Duration = .seconds(300)
+enum SignIn {
+    static let timeout: Duration = .seconds(300)
 
     /**
      * Open the provider's consent page and complete the OAuth code flow through a
@@ -20,8 +20,8 @@ public enum SignIn {
      * - Parameter open: Opens the consent page in the browser; returns `false` if it could not.
      * - Throws: `SignInError`, or `UsageError` when the code exchange fails.
      */
-    public static func run(
-        _ service: any UsageService, open: @Sendable (URL) async -> Bool
+    static func run(
+        _ service: any LoopbackService, open: @Sendable (URL) async -> Bool
     ) async throws -> StoredAccount {
         let pkce = PKCE()
         let state = UUID().uuidString

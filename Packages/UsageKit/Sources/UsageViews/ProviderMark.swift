@@ -2,10 +2,10 @@ import SwiftUI
 import UsageKit
 
 /**
- * The Anthropic and OpenAI marks in a 24 × 24 box, fill rule even-odd.
+ * The Anthropic, OpenAI and Cursor marks in a 24 × 24 box, fill rule even-odd.
  *
  * Path data traced from Lobe Icons 1.95.1, MIT License, Copyright (c) 2023 LobeHub.
- * The marks are trademarks of Anthropic and OpenAI.
+ * The marks are trademarks of Anthropic, OpenAI and Anysphere.
  */
 struct ProviderMark: Shape {
     let provider: Provider
@@ -16,6 +16,7 @@ struct ProviderMark: Shape {
         let segments = switch provider {
         case .claude: Self.anthropic
         case .codex: Self.openAI
+        case .cursor: Self.cursor
         }
         for segment in segments {
             switch segment {
@@ -154,6 +155,33 @@ struct ProviderMark: Shape {
         .curve(1.808, 19.838, 4.567, 22.383, 7.754, 22.383),
         .curve(8.396, 22.383, 9.014, 22.288, 9.634, 22.074),
         .curve(10.744, 23.167, 12.238, 23.782, 13.796, 23.787),
+        .close,
+    ]
+
+    private static let cursor: [Segment] = [
+        .move(22.106, 5.68),
+        .line(12.5, 0.135),
+        .curve(12.191, -0.043, 11.811, -0.043, 11.502, 0.135),
+        .line(1.893, 5.68),
+        .curve(1.634, 5.83, 1.474, 6.107, 1.474, 6.406),
+        .line(1.474, 17.592),
+        .curve(1.474, 17.892, 1.634, 18.169, 1.894, 18.319),
+        .line(11.501, 23.866),
+        .curve(11.81, 24.044, 12.19, 24.044, 12.499, 23.866),
+        .line(22.107, 18.319),
+        .curve(22.367, 18.169, 22.527, 17.892, 22.527, 17.592),
+        .line(22.527, 6.407),
+        .curve(22.526, 6.107, 22.366, 5.831, 22.107, 5.681),
+        .close,
+        .move(21.503, 6.856),
+        .line(12.228, 22.92),
+        .curve(12.165, 23.028, 12, 22.984, 12, 22.859),
+        .line(12, 12.34),
+        .curve(12, 12.13, 11.887, 11.935, 11.705, 11.83),
+        .line(2.595, 6.57),
+        .curve(2.488, 6.508, 2.532, 6.342, 2.657, 6.342),
+        .line(21.207, 6.342),
+        .curve(21.471, 6.342, 21.635, 6.628, 21.503, 6.856),
         .close,
     ]
 }

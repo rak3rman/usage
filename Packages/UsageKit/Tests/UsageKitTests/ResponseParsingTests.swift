@@ -13,9 +13,10 @@ import Testing
                {"kind":"weekly_all","percent":"broken"},
                {"kind":"nimbus_quill","percent":3,"resets_at":null,"scope":null}]}
             """))
-        #expect(limits.session == LimitWindow(
-            percent: 5, resetsAt: Date(timeIntervalSince1970: 1_788_098_400)))
-        #expect(limits.weekly?.percent == 23)
+        #expect(limits.windows == [
+            .session(percent: 5, resetsAt: Date(timeIntervalSince1970: 1_788_098_400)),
+            .weekly(percent: 23, resetsAt: Date(timeIntervalSince1970: 1_788_602_400)),
+        ])
     }
 
     @Test func fallsBackToFiveHourAndSevenDay() throws {
@@ -24,9 +25,7 @@ import Testing
              "seven_day":{"utilization":66,"resets_at":null},
              "limits":[]}
             """))
-        #expect(limits == Limits(
-            session: LimitWindow(percent: 41, resetsAt: nil),
-            weekly: LimitWindow(percent: 66, resetsAt: nil)))
+        #expect(limits == Limits([.session(percent: 41, resetsAt: nil), .weekly(percent: 66, resetsAt: nil)]))
     }
 
     @Test(arguments: ["not json", #"{"limits":[]}"#])
@@ -44,9 +43,10 @@ import Testing
               "secondary_window":{"used_percent":25,"limit_window_seconds":18000,"reset_at":1800003600}}}
             """), now: now)
         #expect(report.plan == "Plus")
-        #expect(report.limits.weekly == LimitWindow(percent: 70, resetsAt: now.addingTimeInterval(120)))
-        #expect(report.limits.session == LimitWindow(
-            percent: 25, resetsAt: Date(timeIntervalSince1970: 1_800_003_600)))
+        #expect(report.limits.windows == [
+            .session(percent: 25, resetsAt: Date(timeIntervalSince1970: 1_800_003_600)),
+            .weekly(percent: 70, resetsAt: now.addingTimeInterval(120)),
+        ])
     }
 
     @Test func readsAnUnusedWindowAsNotStarted() throws {
@@ -54,7 +54,7 @@ import Testing
             {"rate_limit":{"primary_window":{"used_percent":0,"limit_window_seconds":18000,
               "reset_after_seconds":18000,"reset_at":1800018000}}}
             """))
-        #expect(report.limits.session == LimitWindow(percent: 0, resetsAt: nil))
+        #expect(report.limits.windows == [.session(percent: 0, resetsAt: nil)])
     }
 
     @Test(arguments: [
@@ -71,6 +71,56 @@ import Testing
         let payload = PKCE.base64URL(Data(claims.utf8))
         let identity = try CodexIdentity.parse(idToken: "header.\(payload).signature")
         #expect(identity == CodexIdentity(accountID: "acct-1", name: "someone@example.com", plan: "Pro"))
+    }
+}
+
+@Suite struct CursorTests {
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func sessionToken(_ claims: String) -> String {
+        "header.\(PKCE.base64URL(Data(claims.utf8))).signature"
+    }
+
+    @Test func readsAutoAndAPIOverTheBillingCycle() throws {
+        let limits = try CursorUsage.parse(json("""
+            {"billingCycleStart":"1791563238000","billingCycleEnd":"1794241638000",
+             "planUsage":{"totalSpend":1556,"limit":2000,"autoPercentUsed":7.4,"apiPercentUsed":0,"totalPercentUsed":6.2},
+             "spendLimitUsage":{"pooledLimit":"360000","limitType":"team"},"enabled":true}
+            """))
+        let resetsAt = Date(timeIntervalSince1970: 1_794_241_620)
+        #expect(limits == Limits([
+            LimitWindow(.auto, percent: 7.4, resetsAt: resetsAt, length: 31 * 86_400),
+            LimitWindow(.api, percent: 0, resetsAt: resetsAt, length: 31 * 86_400),
+        ]))
+    }
+
+    @Test(arguments: [
+        #"{"billingCycleStart":"1791563238000","billingCycleEnd":"1794241638000"}"#,
+        #"{"billingCycleStart":"1794241638000","billingCycleEnd":"1794241638000","planUsage":{"autoPercentUsed":1,"apiPercentUsed":1}}"#,
+    ])
+    func rejectsAResponseWithoutAPlanOrACycle(body: String) {
+        #expect(throws: UsageError.self) { try CursorUsage.parse(json(body)) }
+    }
+
+    @Test func keepsTheSessionTokenAsItsOwnRefreshTokenAndRefreshesADayEarly() throws {
+        let session = sessionToken(#"{"sub":"auth0|user_1","exp":1800100000}"#)
+        let login = try CursorSession.login(json(#"{"accessToken":"\#(session)","authId":"auth0|user_1"}"#), now: now)
+        #expect(login.userID == "auth0|user_1")
+        #expect(login.tokens == Tokens(accessToken: session, refreshToken: session, expiresIn: 13_600))
+    }
+
+    @Test func recognisesARejectedRefreshToken() {
+        #expect(throws: RefreshRejected.self) {
+            try CursorSession.refreshed(json(#"{"access_token":"","id_token":"","shouldLogout":true}"#), status: 200)
+        }
+    }
+
+    @Test func readsTheNameAndPlanFromTheProfiles() throws {
+        let profile = try CursorProfile.parse(
+            me: json(#"{"email":"someone@example.com","name":"Someone","sub":"auth0|user_1"}"#),
+            membership: json(#"{"membershipType":"free_trial","daysRemainingOnTrial":5}"#),
+            userID: "auth0|user_1")
+        #expect(profile == CursorProfile(name: "someone@example.com", plan: "Free Trial"))
     }
 }
 

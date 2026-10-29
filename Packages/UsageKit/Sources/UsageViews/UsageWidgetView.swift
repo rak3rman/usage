@@ -20,8 +20,8 @@ public struct UsageWidgetView: View {
             if let snapshot, !snapshot.accounts.isEmpty {
                 switch family {
                 case .systemSmall: small(snapshot)
-                case .systemLarge: list(snapshot, capacity: 5, header: true)
-                default: list(snapshot, capacity: 2, header: false)
+                case .systemLarge: list(snapshot, capacity: 5, spreads: false)
+                default: list(snapshot, capacity: 2, spreads: true)
                 }
             } else {
                 empty
@@ -56,7 +56,7 @@ public struct UsageWidgetView: View {
                 switch busiest.reading {
                 case .limits(let limits), .rateLimited(let limits):
                     if let peak = limits.peak {
-                        let reading = LimitReading(peak, peak == limits.session ? .session : .weekly, now: now)
+                        let reading = LimitReading(peak, now: now)
                         Text(Format.percent(peak.percent))
                             .font(.system(size: 34, weight: .light).monospacedDigit())
                             .foregroundStyle(reading.tone == .critical ? Palette.Pace.critical : Palette.content.color)
@@ -73,8 +73,7 @@ public struct UsageWidgetView: View {
                         .padding(.bottom, 12)
                     }
                     VStack(spacing: 5) {
-                        if let session = limits.session { bar(session, .session) }
-                        if let weekly = limits.weekly { bar(weekly, .weekly) }
+                        ForEach(limits.windows, id: \.kind) { bar($0) }
                     }
                 case .failed(let failure):
                     Text(failure.sentence)
@@ -85,23 +84,18 @@ public struct UsageWidgetView: View {
         }
     }
 
-    private func bar(_ window: LimitWindow, _ kind: WindowKind) -> some View {
-        let reading = LimitReading(window, kind, now: now)
+    private func bar(_ window: LimitWindow) -> some View {
+        let reading = LimitReading(window, now: now)
         return DotBar(percent: reading.percent, evenBurn: reading.evenBurn)
     }
 
-    private func list(_ snapshot: UsageSnapshot, capacity: Int, header: Bool) -> some View {
+    private func list(_ snapshot: UsageSnapshot, capacity: Int, spreads: Bool) -> some View {
         let shown = snapshot.accounts.prefix(capacity)
         let hidden = snapshot.accounts.count - shown.count
-        return VStack(alignment: .leading, spacing: header ? 12 : 0) {
-            if header {
-                Text("Usage")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Palette.content.color)
-            }
+        return VStack(alignment: .leading, spacing: spreads ? 0 : 12) {
             ForEach(shown) { account in
                 AccountRow(account, now: now, staleSince: staleSince(snapshot))
-                if !header, account.id != shown.last?.id { Spacer(minLength: 10) }
+                if spreads, account.id != shown.last?.id { Spacer(minLength: 10) }
             }
             Spacer(minLength: 0)
             if hidden > 0 {

@@ -1,7 +1,7 @@
 # Usage
 
-Claude Code and OpenAI Codex subscription limits in a macOS widget, fed by a menu bar
-app. A fork of [Softcap](https://github.com/milushov/softcap).
+Claude Code, OpenAI Codex, and Cursor subscription limits in a macOS widget, fed by a
+menu bar app. A fork of [Softcap](https://github.com/milushov/softcap).
 
 ## Build
 
@@ -19,8 +19,8 @@ container only to a team-signed build. Put your identity in `Signing.local.xccon
 
 ## Use
 
-Open **Accounts…** from the menu bar, choose **Add Claude Code** or **Add Codex**, and
-sign in in the browser. The app polls every five minutes and writes a snapshot; the
+Open **Accounts…** from the menu bar, choose **Add Claude Code**, **Add Codex**, or
+**Add Cursor**, and sign in in the browser. The app polls every five minutes and writes a snapshot; the
 widget makes no network requests.
 
 ## Layout
@@ -29,7 +29,7 @@ widget makes no network requests.
 |---|---|
 | `App/` | Menu bar popover, accounts window, polling |
 | `Widget/` | WidgetKit extension |
-| `Packages/UsageKit/Sources/UsageKit/` | Claude and Codex clients, OAuth sign-in, keychain account store, snapshot store |
+| `Packages/UsageKit/Sources/UsageKit/` | Claude, Codex, and Cursor clients, browser sign-in, keychain account store, snapshot store |
 | `Packages/UsageKit/Sources/UsageViews/` | radical-ui palette, dot bars, account row, widget layouts |
 
 ## Data

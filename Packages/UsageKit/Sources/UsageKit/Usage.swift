@@ -1,19 +1,20 @@
 import Foundation
 
 public enum Provider: String, Codable, Sendable, CaseIterable {
-    case claude, codex
+    case claude, codex, cursor
 
     public var title: String {
         switch self {
         case .claude: "Claude"
         case .codex: "Codex"
+        case .cursor: "Cursor"
         }
     }
 }
 
 public struct AccountID: Codable, Sendable, Hashable, CustomStringConvertible {
     public let provider: Provider
-    /** Claude account UUID or ChatGPT account ID. */
+    /** Claude account UUID, ChatGPT account ID, or Cursor user ID such as `auth0|user_01K…`. */
     public let handle: String
 
     public init(provider: Provider, handle: String) {
@@ -24,31 +25,52 @@ public struct AccountID: Codable, Sendable, Hashable, CustomStringConvertible {
     public var description: String { "\(provider.rawValue)/\(handle)" }
 }
 
+public enum LimitKind: String, Codable, Sendable, Hashable {
+    /** The rolling five-hour window. */
+    case session
+    /** The seven-day window. */
+    case weekly
+    /** Cursor's Auto + Composer allowance for the billing cycle. */
+    case auto
+    /** Cursor's API allowance for the billing cycle. */
+    case api
+}
+
 public struct LimitWindow: Codable, Sendable, Hashable {
+    public let kind: LimitKind
     /** Share of the window used, 0...100. */
     public let percent: Double
     /** Rounded to the whole minute. */
     public let resetsAt: Date?
+    /** Seconds from the window's start to its reset, above zero. */
+    public let length: TimeInterval
 
-    public init(percent: Double, resetsAt: Date?) {
+    public init(_ kind: LimitKind, percent: Double, resetsAt: Date?, length: TimeInterval) {
+        self.kind = kind
         self.percent = percent
         self.resetsAt = resetsAt
+        self.length = length
+    }
+
+    public static func session(percent: Double, resetsAt: Date?) -> LimitWindow {
+        LimitWindow(.session, percent: percent, resetsAt: resetsAt, length: 18_000)
+    }
+
+    public static func weekly(percent: Double, resetsAt: Date?) -> LimitWindow {
+        LimitWindow(.weekly, percent: percent, resetsAt: resetsAt, length: 604_800)
     }
 }
 
 public struct Limits: Codable, Sendable, Hashable {
-    /** The rolling five-hour window. */
-    public let session: LimitWindow?
-    /** The seven-day window. */
-    public let weekly: LimitWindow?
+    /** In display order, one per kind. */
+    public let windows: [LimitWindow]
 
-    public init(session: LimitWindow?, weekly: LimitWindow?) {
-        self.session = session
-        self.weekly = weekly
+    public init(_ windows: [LimitWindow]) {
+        self.windows = windows
     }
 
     public var peak: LimitWindow? {
-        [session, weekly].compactMap { $0 }.max { $0.percent < $1.percent }
+        windows.max { $0.percent < $1.percent }
     }
 }
 

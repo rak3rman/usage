@@ -19,7 +19,7 @@ struct AccountsView: View {
             }
 
             if model.accounts.isEmpty {
-                note("Sign in with the account you use in Claude Code or Codex.")
+                note("Sign in with the account you use in Claude Code, Codex, or Cursor.")
             }
             ForEach(model.accounts) { row($0) }
 
@@ -34,6 +34,7 @@ struct AccountsView: View {
                     Button("Add Claude Code") { model.signIn(.claude) }
                         .focused($addClaudeFocused)
                     Button("Add Codex") { model.signIn(.codex) }
+                    Button("Add Cursor") { model.signIn(.cursor) }
                 }
                 .buttonStyle(PillButtonStyle())
             }

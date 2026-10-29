@@ -1,36 +1,29 @@
 import SwiftUI
 import UsageKit
 
-enum WindowKind {
-    case session, weekly
-
-    var name: String {
+extension LimitKind {
+    /** The figure's prefix in place of the time to reset. */
+    var name: String? {
         switch self {
-        case .session: "5h"
-        case .weekly: "7d"
-        }
-    }
-
-    var seconds: Int {
-        switch self {
-        case .session: 18_000
-        case .weekly: 604_800
+        case .session, .weekly: nil
+        case .auto: "auto"
+        case .api: "api"
         }
     }
 
     var underPaceMargin: Int {
         switch self {
         case .session: 10
-        case .weekly: 8
+        case .weekly, .auto, .api: 8
         }
     }
 }
 
 /**
- * A limit window as the Claude Code status line prints it, e.g. `4h:9%+23`.
+ * A limit window as the Claude Code status line prints it, e.g. `4h:9%+23` or `auto:7%`.
  *
- * The time to reset, rounded up, then the percent used, then the surplus: how many
- * points usage sits under (+) or over (−) an even burn to the reset.
+ * The time to reset, rounded up, or the kind's name, then the percent used, then the
+ * surplus: how many points usage sits under (+) or over (−) an even burn to the reset.
  */
 struct LimitReading: Equatable {
     enum Tone: Equatable { case quiet, underPace, overPace, critical }
@@ -44,24 +37,25 @@ struct LimitReading: Equatable {
     private static let overPaceMargin = 5
     private static let criticalPercent = 90
 
-    init(_ window: LimitWindow, _ kind: WindowKind, now: Date) {
+    init(_ window: LimitWindow, now: Date) {
         percent = Int(window.percent.rounded(.toNearestOrEven))
         let critical = percent >= Self.criticalPercent
+        let length = Int(window.length)
         guard let resetsAt = window.resetsAt else {
-            figure = "\(kind.name):\(percent)%"
+            figure = "\(window.kind.name ?? Self.label(length)):\(percent)%"
             evenBurn = nil
             tone = critical ? .critical : .quiet
             return
         }
-        let untilReset = min(max(0, Int(resetsAt.timeIntervalSince(now))), kind.seconds)
-        let elapsed = kind.seconds - untilReset
-        let evenBurn = (elapsed * 100 + kind.seconds / 2) / kind.seconds
+        let untilReset = min(max(0, Int(resetsAt.timeIntervalSince(now))), length)
+        let elapsed = length - untilReset
+        let evenBurn = (elapsed * 100 + length / 2) / length
         let surplus = evenBurn - percent
-        figure = "\(Self.label(untilReset)):\(percent)%"
+        figure = "\(window.kind.name ?? Self.label(untilReset)):\(percent)%"
         self.evenBurn = evenBurn
         tone = if critical {
             .critical
-        } else if surplus >= kind.underPaceMargin {
+        } else if surplus >= window.kind.underPaceMargin {
             .underPace
         } else if surplus <= -Self.overPaceMargin {
             .overPace

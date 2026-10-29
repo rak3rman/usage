@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Claude: UsageService {
+public struct Claude: LoopbackService {
     public let provider = Provider.claude
     public let redirect = LoopbackRedirect(port: nil, path: "/callback")
 
@@ -160,27 +160,27 @@ enum ClaudeUsage {
             throw UsageError(.unexpectedResponse, "usage not parsed")
         }
         let limits = (body.limits ?? []).compactMap(\.value).filter { $0.scope == nil }
-        func limit(_ kind: String) -> LimitWindow? {
-            limits.first { $0.kind == kind }.map { window($0.percent, $0.resetsAt) }
+        func limit(_ kind: String) -> Body.Limit? { limits.first { $0.kind == kind } }
+        var windows = [
+            limit("session").map { LimitWindow.session(percent: $0.percent, resetsAt: instant($0.resetsAt)) },
+            limit("weekly_all").map { LimitWindow.weekly(percent: $0.percent, resetsAt: instant($0.resetsAt)) },
+        ].compactMap { $0 }
+        if windows.isEmpty {
+            windows = [
+                body.fiveHour?.value.map { LimitWindow.session(percent: $0.utilization, resetsAt: instant($0.resetsAt)) },
+                body.sevenDay?.value.map { LimitWindow.weekly(percent: $0.utilization, resetsAt: instant($0.resetsAt)) },
+            ].compactMap { $0 }
         }
-        var result = Limits(session: limit("session"), weekly: limit("weekly_all"))
-        if result.peak == nil {
-            result = Limits(
-                session: body.fiveHour?.value.map { window($0.utilization, $0.resetsAt) },
-                weekly: body.sevenDay?.value.map { window($0.utilization, $0.resetsAt) })
-        }
-        guard result.peak != nil else {
+        guard !windows.isEmpty else {
             throw UsageError(.unexpectedResponse, "usage has no session or weekly window")
         }
-        return result
+        return Limits(windows)
     }
 
     private static let timestamp = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
 
-    private static func window(_ percent: Double, _ resetsAt: String?) -> LimitWindow {
-        LimitWindow(
-            percent: percent,
-            resetsAt: resetsAt.flatMap { try? timestamp.parse($0) }.map(wholeMinute))
+    private static func instant(_ resetsAt: String?) -> Date? {
+        resetsAt.flatMap { try? timestamp.parse($0) }.map(wholeMinute)
     }
 }
 

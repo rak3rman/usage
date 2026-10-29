@@ -37,7 +37,7 @@ struct UsageWidget: Widget {
             UsageEntryView(entry: entry)
         }
         .configurationDisplayName("Usage")
-        .description("Claude Code and Codex limits.")
+        .description("Claude Code, Codex, and Cursor limits.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

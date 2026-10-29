@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Codex: UsageService {
+public struct Codex: LoopbackService {
     public let provider = Provider.codex
     /** The Codex CLI's OAuth client accepts only this redirect. */
     public let redirect = LoopbackRedirect(port: 1455, path: "/auth/callback")
@@ -146,14 +146,16 @@ enum CodexUsage {
             let started = window.limitWindowSeconds.map { (window.resetAfterSeconds ?? 0) < $0 } ?? true
             let resetsAt = !started ? nil : window.resetAt.map { Date(timeIntervalSince1970: $0) }
                 ?? window.resetAfterSeconds.map { now.addingTimeInterval($0) }
-            let limit = LimitWindow(percent: window.usedPercent, resetsAt: resetsAt.map(wholeMinute))
-            let isSession = window.limitWindowSeconds.map { $0 < 86_400 } ?? isSessionByPosition
-            if isSession { session = limit } else { weekly = limit }
+            if window.limitWindowSeconds.map({ $0 < 86_400 }) ?? isSessionByPosition {
+                session = .session(percent: window.usedPercent, resetsAt: resetsAt.map(wholeMinute))
+            } else {
+                weekly = .weekly(percent: window.usedPercent, resetsAt: resetsAt.map(wholeMinute))
+            }
         }
-        let limits = Limits(session: session, weekly: weekly)
-        guard limits.peak != nil else {
+        let windows = [session, weekly].compactMap { $0 }
+        guard !windows.isEmpty else {
             throw UsageError(.unexpectedResponse, "usage has no rate limit windows")
         }
-        return (body.planType?.capitalized, limits)
+        return (body.planType?.capitalized, Limits(windows))
     }
 }

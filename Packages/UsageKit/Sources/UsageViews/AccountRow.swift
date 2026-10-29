@@ -41,8 +41,7 @@ public struct AccountRow: View {
 
             switch usage.reading {
             case .limits(let limits), .rateLimited(let limits):
-                if let session = limits.session { bar(LimitReading(session, .session, now: now)) }
-                if let weekly = limits.weekly { bar(LimitReading(weekly, .weekly, now: now)) }
+                ForEach(limits.windows, id: \.kind) { bar(LimitReading($0, now: now)) }
             case .failed(let failure):
                 HStack(spacing: 8) {
                     Text("—")

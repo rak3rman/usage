@@ -3,9 +3,15 @@ import Foundation
 
 public protocol UsageService: Sendable {
     var provider: Provider { get }
-    var redirect: LoopbackRedirect { get }
-    func authorizationURL(redirectURI: String, pkce: PKCE, state: String) -> URL
-    func signIn(code: String, pkce: PKCE, redirectURI: String, state: String) async throws -> StoredAccount
+    /**
+     * Sign in through the provider's page in the browser.
+     *
+     * Cancelling the calling task abandons the sign-in.
+     *
+     * - Parameter open: Opens the page in the browser; returns `false` if it could not.
+     * - Throws: `SignInError`, or `UsageError` when the provider refuses the sign-in.
+     */
+    func signIn(open: @Sendable (URL) async -> Bool) async throws -> StoredAccount
     /**
      * Exchange a refresh token for a new access token.
      *
@@ -13,6 +19,18 @@ public protocol UsageService: Sendable {
      */
     func refresh(_ refreshToken: String) async throws -> Tokens
     func usage(of account: StoredAccount, accessToken: String) async throws -> UsageReport
+}
+
+public protocol LoopbackService: UsageService {
+    var redirect: LoopbackRedirect { get }
+    func authorizationURL(redirectURI: String, pkce: PKCE, state: String) -> URL
+    func signIn(code: String, pkce: PKCE, redirectURI: String, state: String) async throws -> StoredAccount
+}
+
+extension LoopbackService {
+    public func signIn(open: @Sendable (URL) async -> Bool) async throws -> StoredAccount {
+        try await SignIn.run(self, open: open)
+    }
 }
 
 public struct UsageReport: Sendable, Hashable {
