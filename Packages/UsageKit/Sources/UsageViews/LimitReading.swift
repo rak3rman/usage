@@ -65,7 +65,7 @@ struct LimitReading: Equatable {
     }
 
     var pace: String? {
-        guard let evenBurn, tone != .quiet else { return nil }
+        guard let evenBurn, tone != .quiet, percent < 100 else { return nil }
         let surplus = evenBurn - percent
         return surplus >= 0 ? "+\(surplus)" : "\(surplus)"
     }

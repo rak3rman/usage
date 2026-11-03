@@ -43,6 +43,11 @@ import UsageKit
         #expect(critical.tone == .critical)
     }
 
+    @Test func dropsThePaceOnceTheLimitIsSpent() {
+        #expect(printed(reading(100, resetsIn: 600, LimitWindow.session)) == "10m:100%")
+        #expect(printed(reading(99.6, resetsIn: 2 * 86_400, LimitWindow.weekly)) == "2d:100%")
+    }
+
     @Test func neverCountsPastTheWindowLength() {
         #expect(reading(0, resetsIn: 18_025, LimitWindow.session).figure == "5h:0%")
         #expect(reading(0, resetsIn: 604_825, LimitWindow.weekly).figure == "7d:0%")
