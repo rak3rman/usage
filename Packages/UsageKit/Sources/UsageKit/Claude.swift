@@ -97,6 +97,7 @@ struct ClaudeProfile: Equatable {
             let displayName: String?
         }
         struct Organization: Decodable {
+            let organizationType: String?
             let rateLimitTier: String?
         }
         let account: Account
@@ -110,17 +111,15 @@ struct ClaudeProfile: Equatable {
         return ClaudeProfile(
             uuid: body.account.uuid,
             name: body.account.email ?? body.account.displayName ?? body.account.uuid,
-            plan: plan(tier: body.organization?.rateLimitTier))
+            plan: plan(body.organization))
     }
 
-    private static func plan(tier: String?) -> String {
-        switch tier {
-        case "default_claude_max_20x": "Max 20x"
-        case "default_claude_max_5x": "Max 5x"
-        case "default_claude_pro": "Pro"
-        case let other?: other
-        case nil: "Claude"
-        }
+    /** Reads `claude_team` on tier `default_claude_max_5x` as "Team 5x". */
+    private static func plan(_ organization: Body.Organization?) -> String {
+        guard let type = organization?.organizationType else { return "Claude" }
+        let name = type.trimmingPrefix("claude_").replacingOccurrences(of: "_", with: " ").capitalized
+        let multiplier = organization?.rateLimitTier?.wholeMatch(of: /default_claude_max_(\d+x)/)?.1
+        return [name, multiplier.map(String.init)].compactMap { $0 }.joined(separator: " ")
     }
 }
 

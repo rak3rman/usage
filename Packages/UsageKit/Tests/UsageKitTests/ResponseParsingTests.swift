@@ -34,6 +34,21 @@ import Testing
     }
 }
 
+@Suite struct ClaudeProfileTests {
+    @Test(arguments: [
+        ("claude_pro", "default_claude_ai", "Pro"),
+        ("claude_max", "default_claude_max_20x", "Max 20x"),
+        ("claude_team", "default_claude_max_5x", "Team 5x"),
+    ])
+    func namesThePlanFromTheOrganization(type: String, tier: String, plan: String) throws {
+        let profile = try ClaudeProfile.parse(json("""
+            {"account":{"uuid":"u-1","email":"someone@example.com"},
+             "organization":{"organization_type":"\(type)","rate_limit_tier":"\(tier)"}}
+            """))
+        #expect(profile.plan == plan)
+    }
+}
+
 @Suite struct CodexUsageTests {
     @Test func classifiesWindowsAndResolvesRelativeResets() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
